@@ -1,17 +1,18 @@
-// N-Body Simulation GPU Shader - Finale korrigierte Version
+// N-Body Simulation GPU Shader - Korrekt aligned für WGSL Storage Buffer
 
 struct Body {
-    position: vec2<f32>,
-    velocity: vec2<f32>,
-    mass: f32,
-    _padding: vec3<f32>,
+    position: vec2<f32>,      // Offset 0, align 8
+    velocity: vec2<f32>,      // Offset 8, align 8
+    mass: f32,                // Offset 16, align 4
+    padding0: f32,            // Offset 20
+    padding1: f32,            // Offset 24
+    padding2: f32,            // Offset 28
 }
 
 struct SimulationParams {
     dt: f32,
     epsilon: f32,
     g_constant: f32,
-    _padding: f32,
 }
 
 @group(0) @binding(0)
@@ -64,5 +65,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     bodies_out[i].position = new_position;
     bodies_out[i].velocity = new_velocity;
     bodies_out[i].mass = current.mass;
-    bodies_out[i]._padding = vec3<f32>(0.0, 0.0, 0.0);
+    bodies_out[i].padding0 = 0.0;
+    bodies_out[i].padding1 = 0.0;
+    bodies_out[i].padding2 = 0.0;
 }

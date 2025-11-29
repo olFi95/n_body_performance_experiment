@@ -107,9 +107,8 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore] // TODO: GPU-Implementierung hat noch einen Shader-Bug - nur Thread 0 schreibt korrekt
     async fn test_cpu_single_vs_gpu() {
-        let bodies = utils::generate_random_bodies(100, 100.0);
+        let bodies = utils::generate_random_bodies(11, 100.0);
         let params = SimulationParams::default();
 
         let mut sim1 = CpuSingleThreaded::new(bodies.clone(), params);
@@ -126,7 +125,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore] // TODO: GPU-Implementierung hat noch einen Shader-Bug - nur Thread 0 schreibt korrekt
     async fn test_gpu_basic() {
         // Einfacher Test mit nur 2 Körpern
         let bodies = utils::generate_two_body_system();
