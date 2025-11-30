@@ -96,12 +96,6 @@ impl GpuSimulator {
             let buffer_b_data: Vec<Body> = bytemuck::cast_slice(&data).to_vec();
             drop(data);
             staging.unmap();
-
-            println!("DEBUG: Buffer B nach Initialisierung:");
-            for (i, b) in buffer_b_data.iter().take(3).enumerate() {
-                println!("  Body {}: pos=[{:.3}, {:.3}], vel=[{:.3}, {:.3}]",
-                         i, b.position[0], b.position[1], b.velocity[0], b.velocity[1]);
-            }
         }
 
         // Shader Module
