@@ -4,13 +4,13 @@ use crate::nbody::types::{Body, SimulationParams};
 pub trait NBodySimulator: Send {
     /// Führt eine bestimmte Anzahl von Simulationsschritten durch
     fn step(&mut self, steps: usize);
-    
+
     /// Gibt die aktuellen Körper zurück
     fn get_bodies(&self) -> Vec<Body>;
-    
+
     /// Gibt die Simulationsparameter zurück
     fn get_params(&self) -> SimulationParams;
-    
+
     /// Setzt neue Körper
     fn set_bodies(&mut self, bodies: Vec<Body>);
 }

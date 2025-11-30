@@ -6,9 +6,9 @@ use std::time::Duration;
 // Konfiguration für bessere Plots
 fn configure_criterion() -> Criterion {
     Criterion::default()
-        .sample_size(10)
-        .measurement_time(Duration::from_secs(5))
-        .warm_up_time(Duration::from_secs(2))
+        .sample_size(20)
+        .measurement_time(Duration::from_secs(15))
+        .warm_up_time(Duration::from_secs(5))
 }
 
 fn benchmark_scaling_comparison(c: &mut Criterion) {
