@@ -8,7 +8,7 @@ mod tests {
     fn compare_bodies(bodies1: &[Body], bodies2: &[Body], tolerance: f32) {
         assert_eq!(bodies1.len(), bodies2.len(), "Anzahl der Körper stimmt nicht überein");
 
-        for (i, (b1, b2)) in bodies1.iter().zip(bodies2.iter()).enumerate() {
+        for (_, (b1, b2)) in bodies1.iter().zip(bodies2.iter()).enumerate() {
             assert_relative_eq!(b1.position[0], b2.position[0], epsilon = tolerance,
                 max_relative = tolerance);
             assert_relative_eq!(b1.position[1], b2.position[1], epsilon = tolerance,

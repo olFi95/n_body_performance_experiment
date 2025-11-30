@@ -700,21 +700,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "monte_carlo_root"
-version = "0.1.0"
-dependencies = [
- "approx",
- "bytemuck",
- "criterion",
- "futures",
- "futures-channel",
- "rand",
- "rayon",
- "tokio",
- "wgpu",
-]
-
-[[package]]
 name = "naga"
 version = "27.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -738,6 +723,21 @@ dependencies = [
  "spirv",
  "thiserror 2.0.12",
  "unicode-ident",
+]
+
+[[package]]
+name = "nbody_sim"
+version = "0.1.0"
+dependencies = [
+ "approx",
+ "bytemuck",
+ "criterion",
+ "futures",
+ "futures-channel",
+ "rand",
+ "rayon",
+ "tokio",
+ "wgpu",
 ]
 
 [[package]]

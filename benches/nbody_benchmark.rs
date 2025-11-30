@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, PlotConfiguration, AxisScale};
-use monte_carlo_root::nbody::*;
+use nbody_sim::nbody::*;
 use std::time::Duration;
 
 fn configure_criterion() -> Criterion {

@@ -92,9 +92,6 @@ impl GpuSimulator {
             device.poll(wgpu::wgt::PollType::Wait { submission_index: Some(idx), timeout: None }).unwrap();
             futures::executor::block_on(rx).unwrap().unwrap();
 
-            let data = slice.get_mapped_range();
-            let buffer_b_data: Vec<Body> = bytemuck::cast_slice(&data).to_vec();
-            drop(data);
             staging.unmap();
         }
 

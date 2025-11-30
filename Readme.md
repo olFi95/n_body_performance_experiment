@@ -1,73 +1,54 @@
-# N-Body Simulation - Performance-Vergleich
+# N-Body Simulation
 
-Dieses Projekt demonstriert verschiedene Optimierungstechniken für N-Body-Simulationen in 2D.
+N-Body sim with different implementations. Wanted to see which one's fastest.
 
-## Implementierungen
+## Implementations
 
-Das Projekt enthält 5 verschiedene Backend-Implementierungen der N-Body-Simulation:
+- CPU single-threaded (slow)
+- CPU multi-threaded (Rayon)
+- SIMD single-threaded
+- SIMD multi-threaded (usually fastest for CPU)
+- GPU (WGPU - fast for lots of bodies)
 
-1. **CPU Single-threaded** - Naive, single-threaded CPU-Implementierung
-2. **CPU Rayon Multi-threaded** - Parallelisiert mit Rayon
-3. **SIMD Single-threaded** - Verwendet SIMD-Instruktionen (f32x8)
-4. **SIMD Rayon Multi-threaded** - Kombiniert SIMD und Rayon
-5. **GPU WGPU** - Läuft auf der GPU mittels WGPU
-
-## Verwendung
-
-```rust
-use monte_carlo_root::nbody::*;
-
-// Erstelle Körper
-let bodies = utils::generate_random_bodies(100, 100.0);
-let params = SimulationParams::default();
-
-// Wähle ein Backend
-let mut sim = CpuSingleThreaded::new(bodies.clone(), params);
-// let mut sim = CpuMultiThreaded::new(bodies.clone(), params);
-// let mut sim = SimdSingleThreaded::new(bodies.clone(), params);
-// let mut sim = SimdMultiThreaded::new(bodies.clone(), params);
-// let mut sim = GpuSimulator::new(bodies.clone(), params).await; // async!
-
-// Führe Simulation durch
-sim.step(10);
-
-// Hole Ergebnisse
-let result = sim.get_bodies();
-```
-
-## Tests ausführen
+## Build
 
 ```bash
-cargo test
+cargo build --release
 ```
 
-Die Tests vergleichen alle Implementierungen miteinander und stellen sicher, dass sie die gleichen Ergebnisse produzieren (innerhalb von Floating-Point-Toleranzen).
+Needs nightly Rust for SIMD stuff.
 
-## Benchmarks ausführen
+## Run Benchmarks
 
 ```bash
 cargo bench
 ```
 
-Die Benchmarks vergleichen die Performance aller Implementierungen mit verschiedenen Anzahlen von Körpern und Simulationsschritten.
+Results in `target/criterion/report/index.html`
 
-## Ergebnisse
+## Usage
 
-Die Benchmarks zeigen typischerweise:
-- **CPU Single** ist die Baseline
-- **CPU Rayon** skaliert gut mit mehreren Cores
-- **SIMD Single** ist deutlich schneller für die Vektoroperationen
-- **SIMD Rayon** kombiniert beide Vorteile
-- **GPU** ist am effizientesten bei großen Datenmengen (>1000 Körper)
+```rust
+use nbody_sim::nbody::*;
 
-## Voraussetzungen
+let bodies = utils::generate_random_bodies(1000, 100.0);
+let mut sim = CpuMultiThreaded::new(bodies, SimulationParams::default());
+sim.step(100);
+```
 
-- Rust Nightly (für portable_simd Feature)
-- WGPU-kompatible GPU für GPU-Backend
+All implementations use the same `Simulation` trait, so just swap the type.
 
-## Simulationsparameter
+## Tests
 
-- `dt`: Zeitschritt (Standard: 0.016 für ~60 FPS)
-- `epsilon`: Softening-Parameter zur Vermeidung von Singularitäten (Standard: 1e-6)
-- `g_constant`: Gravitationskonstante (Standard: 1.0)
+```bash
+cargo test
+```
 
+## Notes
+
+- GPU is slower for small body counts (initialization overhead)
+- SIMD variants need alignment, handled internally
+- More bodies = GPU wins
+- More CPU cores = Rayon scales better
+
+That's it.
