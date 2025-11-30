@@ -1,93 +1,50 @@
 /// Single-threaded CPU N-Body Simulation
-use crate::nbody::simulator::NBodySimulator;
 use crate::nbody::types::{Body, SimulationParams};
+use crate::nbody::simulation_state::SimulationState;
+use crate::nbody::simulation_trait::Simulation;
+use crate::nbody::cpu_core;
 
 pub struct CpuSingleThreaded {
-    bodies: Vec<Body>,
-    params: SimulationParams,
+    state: SimulationState,
 }
 
 impl CpuSingleThreaded {
     pub fn new(bodies: Vec<Body>, params: SimulationParams) -> Self {
-        Self { bodies, params }
+        Self {
+            state: SimulationState::new(bodies, params),
+        }
+    }
+
+    #[inline]
+    fn step_once(&mut self) {
+        let n = self.state.len();
+        let bodies_ref = self.state.bodies();
+        let params = self.state.params;
+
+        // Sequential iteration mit CPU-Kern
+        let new_bodies: Vec<Body> = (0..n)
+            .map(|i| {
+                cpu_core::compute_body_update(i, bodies_ref, &params)
+            })
+            .collect();
+
+        self.state.update_bodies(new_bodies);
     }
 }
 
-impl NBodySimulator for CpuSingleThreaded {
+// Implementierung des zentralen Simulation Traits
+impl Simulation for CpuSingleThreaded {
     fn step(&mut self, steps: usize) {
         for _ in 0..steps {
             self.step_once();
         }
     }
 
-    fn get_bodies(&self) -> Vec<Body> {
-        self.bodies.clone()
+    fn state(&self) -> &SimulationState {
+        &self.state
     }
 
-    fn get_params(&self) -> SimulationParams {
-        self.params
-    }
-
-    fn set_bodies(&mut self, bodies: Vec<Body>) {
-        self.bodies = bodies;
+    fn state_mut(&mut self) -> &mut SimulationState {
+        &mut self.state
     }
 }
-
-impl CpuSingleThreaded {
-    #[inline]
-    fn step_once(&mut self) {
-        let n = self.bodies.len();
-        let mut new_bodies = vec![Body::new([0.0; 2], [0.0; 2], 0.0); n];
-
-        for i in 0..n {
-            let current = self.bodies[i];
-            let mut force = [0.0f32; 2];
-
-            // Berechne Kraft von allen anderen Körpern
-            for j in 0..n {
-                if i == j {
-                    continue;
-                }
-
-                let other = self.bodies[j];
-                let r_vec = [
-                    other.position[0] - current.position[0],
-                    other.position[1] - current.position[1],
-                ];
-
-                let r_squared = (r_vec[0].powi(2) + r_vec[1].powi(2))
-                    .max(self.params.epsilon);
-                let r_distance = r_squared.sqrt();
-
-                // F = G * m1 * m2 / r^2
-                let force_magnitude =
-                    self.params.g_constant * current.mass * other.mass / r_squared;
-
-                let force_direction = [r_vec[0] / r_distance, r_vec[1] / r_distance];
-
-                force[0] += force_magnitude * force_direction[0];
-                force[1] += force_magnitude * force_direction[1];
-            }
-
-            // Berechne Beschleunigung: a = F / m
-            let acceleration = [force[0] / current.mass, force[1] / current.mass];
-
-            // Update Geschwindigkeit: v = v + a * dt
-            let new_velocity = [
-                current.velocity[0] + acceleration[0] * self.params.dt,
-                current.velocity[1] + acceleration[1] * self.params.dt,
-            ];
-
-            // Update Position: x = x + v * dt
-            let new_position = [
-                current.position[0] + new_velocity[0] * self.params.dt,
-                current.position[1] + new_velocity[1] * self.params.dt,
-            ];
-
-            new_bodies[i] = Body::new(new_position, new_velocity, current.mass);
-        }
-
-        self.bodies = new_bodies;
-    }
-}
-

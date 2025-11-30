@@ -1,12 +1,12 @@
 /// GPU N-Body Simulation mit WGPU - Double-Buffering wie CPU-Version
-use crate::nbody::simulator::NBodySimulator;
 use crate::nbody::types::{Body, SimulationParams};
+use crate::nbody::simulation_state::SimulationState;
+use crate::nbody::simulation_trait::Simulation;
 use wgpu::util::DeviceExt;
 use wgpu::wgt::PollType;
 
 pub struct GpuSimulator {
-    bodies: Vec<Body>,
-    params: SimulationParams,
+    state: SimulationState,
     device: wgpu::Device,
     queue: wgpu::Queue,
     compute_pipeline: wgpu::ComputePipeline,
@@ -176,8 +176,7 @@ impl GpuSimulator {
         });
 
         Self {
-            bodies,
-            params,
+            state: SimulationState::new(bodies.clone(), params),
             device,
             queue,
             compute_pipeline,
@@ -186,24 +185,71 @@ impl GpuSimulator {
             bodies_buffer_b,
             params_buffer,
             n_bodies_buffer,
-            current_buffer_is_a: true, // Initial sind Daten in Buffer A
+            current_buffer_is_a: true,
         }
+    }
+
+    /// Liest die aktuellen Bodies von der GPU zurück
+    fn read_bodies_from_gpu(&self) -> Vec<Body> {
+        let source_buffer = if self.current_buffer_is_a {
+            &self.bodies_buffer_a
+        } else {
+            &self.bodies_buffer_b
+        };
+
+        let staging_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Staging Buffer"),
+            size: (self.state.len() * std::mem::size_of::<Body>()) as u64,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Copy Encoder"),
+        });
+
+        encoder.copy_buffer_to_buffer(
+            source_buffer, 0, &staging_buffer, 0,
+            (self.state.len() * std::mem::size_of::<Body>()) as u64,
+        );
+
+        let submission_index = self.queue.submit(Some(encoder.finish()));
+
+        let (sender, receiver) = futures_channel::oneshot::channel();
+        staging_buffer.slice(..).map_async(wgpu::MapMode::Read, move |result| {
+            let _ = sender.send(result);
+        });
+
+        self.device.poll(PollType::Wait {
+            submission_index: Some(submission_index),
+            timeout: None,
+        }).expect("Failed to poll device");
+
+        futures::executor::block_on(receiver)
+            .expect("Communication failed")
+            .expect("Buffer reading failed");
+
+        let data = staging_buffer.slice(..).get_mapped_range();
+        let bodies: Vec<Body> = bytemuck::cast_slice(&data).to_vec();
+        drop(data);
+        staging_buffer.unmap();
+
+        bodies
     }
 }
 
-impl NBodySimulator for GpuSimulator {
+// Implementierung des zentralen Simulation Traits
+impl Simulation for GpuSimulator {
     fn step(&mut self, steps: usize) {
-        let n = self.bodies.len() as u32;
+        let n = self.state.len() as u32;
         let workgroup_size = 256;
         let num_workgroups = (n + workgroup_size - 1) / workgroup_size;
 
         for _ in 0..steps {
             // Double-Buffering: Lese aus dem Buffer mit aktuellen Daten, schreibe in den anderen
             let (input_buffer, output_buffer) = if self.current_buffer_is_a {
-                // Aktuelle Daten sind in A -> lese aus A, schreibe in B
                 (&self.bodies_buffer_a, &self.bodies_buffer_b)
             } else {
-                // Aktuelle Daten sind in B -> lese aus B, schreibe in A
                 (&self.bodies_buffer_b, &self.bodies_buffer_a)
             };
 
@@ -260,77 +306,16 @@ impl NBodySimulator for GpuSimulator {
             // Swap: Nach dem Compute-Pass liegen die neuen Daten im Output-Buffer
             self.current_buffer_is_a = !self.current_buffer_is_a;
         }
+
+        // Synchronisiere den state mit den GPU-Daten
+        self.state.update_bodies(self.read_bodies_from_gpu());
     }
 
-    fn get_bodies(&self) -> Vec<Body> {
-        // Lese aus dem Buffer mit den aktuellen Daten
-        let source_buffer = if self.current_buffer_is_a {
-            &self.bodies_buffer_a
-        } else {
-            &self.bodies_buffer_b
-        };
-
-        let staging_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Staging Buffer"),
-            size: (self.bodies.len() * std::mem::size_of::<Body>()) as u64,
-            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Copy Encoder"),
-            });
-
-        encoder.copy_buffer_to_buffer(
-            source_buffer,
-            0,
-            &staging_buffer,
-            0,
-            (self.bodies.len() * std::mem::size_of::<Body>()) as u64,
-        );
-
-        let command_buffer = encoder.finish();
-        let submission_index = self.queue.submit(Some(command_buffer));
-
-        let (sender, receiver) = futures_channel::oneshot::channel();
-        staging_buffer
-            .slice(..)
-            .map_async(wgpu::MapMode::Read, move |result| {
-                let _ = sender.send(result);
-            });
-
-        self.device.poll(PollType::Wait {
-            submission_index: Some(submission_index),
-            timeout: None,
-        }).expect("Failed to poll device");
-
-        futures::executor::block_on(receiver)
-            .expect("Communication failed")
-            .expect("Buffer reading failed");
-
-        let data = staging_buffer.slice(..).get_mapped_range();
-        let bodies: Vec<Body> = bytemuck::cast_slice(&data).to_vec();
-        drop(data);
-        staging_buffer.unmap();
-
-        bodies
+    fn state(&self) -> &SimulationState {
+        &self.state
     }
 
-    fn get_params(&self) -> SimulationParams {
-        self.params
-    }
-
-    fn set_bodies(&mut self, bodies: Vec<Body>) {
-        self.bodies = bodies.clone();
-        // Schreibe in den Buffer mit den aktuellen Daten
-        let target_buffer = if self.current_buffer_is_a {
-            &self.bodies_buffer_a
-        } else {
-            &self.bodies_buffer_b
-        };
-        self.queue
-            .write_buffer(target_buffer, 0, bytemuck::cast_slice(&bodies));
+    fn state_mut(&mut self) -> &mut SimulationState {
+        &mut self.state
     }
 }
