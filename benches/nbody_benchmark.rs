@@ -61,10 +61,62 @@ fn benchmark_scaling_comparison(c: &mut Criterion) {
     group.finish();
 }
 
+fn benchmark_step_scaling(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Step Scaling: All Implementations");
+    group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
+
+    const NUM_BODIES: usize = 10_000;
+    let bodies = utils::generate_random_bodies(NUM_BODIES, 100.0);
+    let params = SimulationParams::default();
+
+    for steps in [1, 10, 50, 100, 250, 500].iter() {
+        group.bench_with_input(BenchmarkId::new("CPU Single", steps), steps, |b, &s| {
+            let mut sim = CpuSingleThreaded::new(bodies.clone(), params);
+            b.iter(|| {
+                sim.step(black_box(s));
+            });
+        });
+
+        group.bench_with_input(BenchmarkId::new("CPU Rayon", steps), steps, |b, &s| {
+            let mut sim = CpuMultiThreaded::new(bodies.clone(), params);
+            b.iter(|| {
+                sim.step(black_box(s));
+            });
+        });
+
+        group.bench_with_input(BenchmarkId::new("SIMD Single", steps), steps, |b, &s| {
+            let mut sim = SimdSingleThreaded::new(bodies.clone(), params);
+            b.iter(|| {
+                sim.step(black_box(s));
+            });
+        });
+
+        group.bench_with_input(BenchmarkId::new("SIMD Rayon", steps), steps, |b, &s| {
+            let mut sim = SimdMultiThreaded::new(bodies.clone(), params);
+            b.iter(|| {
+                sim.step(black_box(s));
+            });
+        });
+
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut gpu_sim = rt.block_on(async {
+            GpuSimulator::new(bodies.clone(), params).await
+        });
+
+        group.bench_with_input(BenchmarkId::new("GPU WGPU", steps), steps, |b, &s| {
+            b.iter(|| {
+                gpu_sim.step(black_box(s));
+            });
+        });
+    }
+
+    group.finish();
+}
+
 criterion_group!(
     name = benches;
     config = configure_criterion();
-    targets = benchmark_scaling_comparison
+    targets = benchmark_scaling_comparison, benchmark_step_scaling
 );
 
 criterion_main!(benches);
