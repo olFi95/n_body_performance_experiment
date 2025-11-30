@@ -18,7 +18,7 @@ impl CpuSingleThreaded {
     fn step_once(&mut self) {
         let n = self.state.len();
         let bodies_ref = self.state.bodies();
-        let params = self.state.params;
+        let params = self.state.get_params();
 
         let new_bodies: Vec<Body> = (0..n)
             .map(|i| {
@@ -37,11 +37,20 @@ impl Simulation for CpuSingleThreaded {
         }
     }
 
-    fn state(&self) -> &SimulationState {
-        &self.state
+    fn get_bodies(&self) -> Vec<Body> {
+        self.state.get_bodies()
     }
 
     fn set_bodies(&mut self, bodies: Vec<Body>) {
         self.state.set_bodies(bodies);
     }
+
+    fn get_params(&self) -> &SimulationParams {
+        self.state.get_params()
+    }
+
+    fn set_params(&mut self, simulation_params: SimulationParams) {
+        self.state.params = simulation_params;
+    }
+
 }

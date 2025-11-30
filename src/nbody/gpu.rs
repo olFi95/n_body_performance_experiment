@@ -15,7 +15,6 @@ pub struct GpuSimulator {
     bodies_buffer_b: wgpu::Buffer,
     params_buffer: wgpu::Buffer,
     n_bodies_buffer: wgpu::Buffer,
-    // true = aktuelle Daten sind in Buffer A, false = aktuelle Daten sind in Buffer B
     current_buffer_is_a: bool,
 }
 
@@ -183,51 +182,6 @@ impl GpuSimulator {
         }
     }
 
-    /// Liest die aktuellen Bodies von der GPU zurück
-    fn read_bodies_from_gpu(&self) -> Vec<Body> {
-        let source_buffer = self.get_active_buffer();
-
-        let staging_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Staging Buffer"),
-            size: (self.state.len() * std::mem::size_of::<Body>()) as u64,
-            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Copy Encoder"),
-        });
-
-        encoder.copy_buffer_to_buffer(
-            source_buffer, 0, &staging_buffer, 0,
-            (self.state.len() * std::mem::size_of::<Body>()) as u64,
-        );
-
-        let submission_index = self.queue.submit(Some(encoder.finish()));
-
-        let (sender, receiver) = futures_channel::oneshot::channel();
-        staging_buffer.slice(..).map_async(wgpu::MapMode::Read, move |result| {
-            let _ = sender.send(result);
-        });
-
-        self.device.poll(PollType::Wait {
-            submission_index: Some(submission_index),
-            timeout: None,
-        }).expect("Failed to poll device");
-
-        futures::executor::block_on(receiver)
-            .expect("Communication failed")
-            .expect("Buffer reading failed");
-
-        let data = staging_buffer.slice(..).get_mapped_range();
-        let bodies: Vec<Body> = bytemuck::cast_slice(&data).to_vec();
-        drop(data);
-        staging_buffer.unmap();
-
-        bodies
-    }
-
-    /// Gibt den aktuellen Buffer zurück (der die neuesten Daten enthält)
     #[inline]
     fn get_active_buffer(&self) -> &wgpu::Buffer {
         if self.current_buffer_is_a {
@@ -307,11 +261,50 @@ impl Simulation for GpuSimulator {
             timeout: None,
         }).expect("Failed to poll device");
 
-        self.state.update_bodies(self.read_bodies_from_gpu());
+        self.state.update_bodies(self.get_bodies());
     }
 
-    fn state(&self) -> &SimulationState {
-        &self.state
+    fn get_bodies(&self) -> Vec<Body> {
+        let source_buffer = self.get_active_buffer();
+
+        let staging_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Staging Buffer"),
+            size: (self.state.len() * std::mem::size_of::<Body>()) as u64,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Copy Encoder"),
+        });
+
+        encoder.copy_buffer_to_buffer(
+            source_buffer, 0, &staging_buffer, 0,
+            (self.state.len() * std::mem::size_of::<Body>()) as u64,
+        );
+
+        let submission_index = self.queue.submit(Some(encoder.finish()));
+
+        let (sender, receiver) = futures_channel::oneshot::channel();
+        staging_buffer.slice(..).map_async(wgpu::MapMode::Read, move |result| {
+            let _ = sender.send(result);
+        });
+
+        self.device.poll(PollType::Wait {
+            submission_index: Some(submission_index),
+            timeout: None,
+        }).expect("Failed to poll device");
+
+        futures::executor::block_on(receiver)
+            .expect("Communication failed")
+            .expect("Buffer reading failed");
+
+        let data = staging_buffer.slice(..).get_mapped_range();
+        let bodies: Vec<Body> = bytemuck::cast_slice(&data).to_vec();
+        drop(data);
+        staging_buffer.unmap();
+
+        bodies
     }
 
     fn set_bodies(&mut self, bodies: Vec<Body>) {
@@ -320,5 +313,20 @@ impl Simulation for GpuSimulator {
         let target_buffer = self.get_active_buffer();
 
         self.queue.write_buffer(target_buffer, 0, bytemuck::cast_slice(&bodies));
+    }
+
+    fn get_params(&self) -> &SimulationParams {
+        self.state.get_params()
+    }
+
+    fn set_params(&mut self, simulation_params: SimulationParams) {
+        self.state.params = simulation_params;
+
+        // Aktualisiere den GPU-Buffer mit den neuen Parametern
+        self.queue.write_buffer(
+            &self.params_buffer,
+            0,
+            bytemuck::bytes_of(&simulation_params)
+        );
     }
 }

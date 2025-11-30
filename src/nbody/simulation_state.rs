@@ -1,8 +1,8 @@
 use crate::nbody::types::{Body, SimulationParams};
 
 pub struct SimulationState {
-    pub bodies: Vec<Body>,
-    pub params: SimulationParams,
+    bodies: Vec<Body>,
+    pub(crate) params: SimulationParams,
 }
 
 impl SimulationState {
@@ -31,8 +31,8 @@ impl SimulationState {
     }
 
     #[inline]
-    pub fn get_params(&self) -> SimulationParams {
-        self.params
+    pub fn get_params(&self) -> &SimulationParams {
+        &self.params
     }
 
     #[inline]

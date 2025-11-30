@@ -233,4 +233,161 @@ mod tests {
         compare_bodies(&result_cpu_single, &result_simd_single, EPSILON);
         compare_bodies(&result_cpu_single, &result_simd_rayon, EPSILON);
     }
+
+    // ========== Tests für set_params und set_bodies ==========
+
+    #[test]
+    fn test_set_params_cpu_single() {
+        let bodies = utils::generate_random_bodies(10, 100.0);
+        let params = SimulationParams::default();
+
+        let mut sim = CpuSingleThreaded::new(bodies.clone(), params);
+
+        // Schritt 1: Einen Step mit Standard-Params
+        sim.step(1);
+        let bodies_after_step1 = sim.get_bodies();
+
+        // Schritt 2: Neue Parameter setzen
+        let new_params = SimulationParams {
+            dt: 0.032,  // Doppelter Zeitschritt
+            epsilon: 1e-5,
+            g_constant: 2.0,  // Doppelte Gravitation
+        };
+        sim.set_params(new_params);
+
+        // Schritt 3: Parameter wieder auslesen und verifizieren
+        let read_params = sim.get_params();
+        assert_eq!(read_params.dt, new_params.dt);
+        assert_eq!(read_params.epsilon, new_params.epsilon);
+        assert_eq!(read_params.g_constant, new_params.g_constant);
+
+        // Schritt 4: Noch einen Step mit neuen Params
+        sim.step(1);
+        let bodies_after_step2 = sim.get_bodies();
+
+        // Die Bodies sollten sich unterschiedlich bewegt haben
+        assert_ne!(bodies_after_step1[0].position, bodies_after_step2[0].position);
+    }
+
+    #[tokio::test]
+    async fn test_set_params_gpu() {
+        let bodies = utils::generate_random_bodies(10, 100.0);
+        let params = SimulationParams::default();
+
+        let mut sim = GpuSimulator::new(bodies.clone(), params).await;
+
+        // Schritt 1: Einen Step mit Standard-Params
+        sim.step(1);
+        let bodies_after_step1 = sim.get_bodies();
+
+        // Schritt 2: Neue Parameter setzen
+        let new_params = SimulationParams {
+            dt: 0.032,  // Doppelter Zeitschritt
+            epsilon: 1e-5,
+            g_constant: 2.0,  // Doppelte Gravitation
+        };
+        sim.set_params(new_params);
+
+        // Schritt 3: Parameter wieder auslesen und verifizieren
+        let read_params = sim.get_params();
+        assert_eq!(read_params.dt, new_params.dt);
+        assert_eq!(read_params.epsilon, new_params.epsilon);
+        assert_eq!(read_params.g_constant, new_params.g_constant);
+
+        // Schritt 4: Noch einen Step mit neuen Params
+        sim.step(1);
+        let bodies_after_step2 = sim.get_bodies();
+
+        // Die Bodies sollten sich unterschiedlich bewegt haben
+        assert_ne!(bodies_after_step1[0].position, bodies_after_step2[0].position);
+    }
+
+    #[test]
+    fn test_set_bodies_cpu_single() {
+        let bodies = utils::generate_random_bodies(10, 100.0);
+        let params = SimulationParams::default();
+
+        let mut sim = CpuSingleThreaded::new(bodies.clone(), params);
+
+        // Schritt 1: Einen Step
+        sim.step(1);
+
+        // Schritt 2: Neue Bodies setzen
+        let new_bodies = utils::generate_two_body_system();
+        sim.set_bodies(new_bodies.clone());
+
+        // Schritt 3: Bodies wieder auslesen und verifizieren
+        let read_bodies = sim.get_bodies();
+        assert_eq!(read_bodies.len(), new_bodies.len());
+        compare_bodies(&read_bodies, &new_bodies, 1e-6);
+
+        // Schritt 4: Noch einen Step mit neuen Bodies
+        sim.step(1);
+        let bodies_after_step = sim.get_bodies();
+
+        // Die Bodies sollten sich bewegt haben
+        assert_ne!(bodies_after_step[0].position, new_bodies[0].position);
+        assert_ne!(bodies_after_step[1].position, new_bodies[1].position);
+    }
+
+    #[tokio::test]
+    async fn test_set_bodies_gpu() {
+        let bodies = utils::generate_random_bodies(10, 100.0);
+        let params = SimulationParams::default();
+
+        let mut sim = GpuSimulator::new(bodies.clone(), params).await;
+
+        // Schritt 1: Einen Step
+        sim.step(1);
+
+        // Schritt 2: Neue Bodies setzen
+        let new_bodies = utils::generate_two_body_system();
+        sim.set_bodies(new_bodies.clone());
+
+        // Schritt 3: Bodies wieder auslesen und verifizieren
+        let read_bodies = sim.get_bodies();
+        assert_eq!(read_bodies.len(), new_bodies.len());
+        compare_bodies(&read_bodies, &new_bodies, 1e-6);
+
+        // Schritt 4: Noch einen Step mit neuen Bodies
+        sim.step(1);
+        let bodies_after_step = sim.get_bodies();
+
+        // Die Bodies sollten sich bewegt haben
+        assert_ne!(bodies_after_step[0].position, new_bodies[0].position);
+        assert_ne!(bodies_after_step[1].position, new_bodies[1].position);
+    }
+
+    #[tokio::test]
+    async fn test_params_synchronization_gpu() {
+        // Dieser Test verifiziert, dass Params wirklich auf der GPU ankommen
+        let bodies = utils::generate_two_body_system();
+        let params = SimulationParams::default();
+
+        // Zwei Simulationen: eine mit Standard-Params, eine mit modifizierten
+        let mut sim1 = GpuSimulator::new(bodies.clone(), params).await;
+        let mut sim2 = GpuSimulator::new(bodies.clone(), params).await;
+
+        // sim2 bekommt andere Parameter
+        let modified_params = SimulationParams {
+            dt: 0.032,
+            epsilon: params.epsilon,
+            g_constant: 5.0,  // Sehr unterschiedlich
+        };
+        sim2.set_params(modified_params);
+
+        // Beide einen Step
+        sim1.step(1);
+        sim2.step(1);
+
+        let result1 = sim1.get_bodies();
+        let result2 = sim2.get_bodies();
+
+        // Die Ergebnisse MÜSSEN unterschiedlich sein (unterschiedliche g_constant)
+        let pos_diff = ((result1[0].position[0] - result2[0].position[0]).powi(2)
+            + (result1[0].position[1] - result2[0].position[1]).powi(2)).sqrt();
+
+        assert!(pos_diff > 0.01,
+            "GPU params not applied correctly - positions too similar: diff = {}", pos_diff);
+    }
 }

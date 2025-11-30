@@ -39,11 +39,19 @@ impl Simulation for CpuMultiThreaded {
         }
     }
 
-    fn state(&self) -> &SimulationState {
-        &self.state
-    }
-
     fn set_bodies(&mut self, bodies: Vec<Body>) {
         self.state.set_bodies(bodies);
+    }
+
+    fn get_bodies(&self) -> Vec<Body> {
+        self.state.get_bodies()
+    }
+
+    fn get_params(&self) -> &SimulationParams {
+        self.state.get_params()
+    }
+
+    fn set_params(&mut self, simulation_params: SimulationParams) {
+        self.state.params = simulation_params;
     }
 }
