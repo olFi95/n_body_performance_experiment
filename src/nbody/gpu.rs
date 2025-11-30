@@ -104,9 +104,6 @@ impl GpuSimulator {
             source: wgpu::ShaderSource::Wgsl(include_str!("nbody.wgsl").into()),
         });
 
-        // Überprüfe Shader-Kompilierung
-        println!("GPU Shader erfolgreich kompiliert");
-
         // Bind Group Layout
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("N-Body Bind Group Layout"),
