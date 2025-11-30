@@ -191,11 +191,7 @@ impl GpuSimulator {
 
     /// Liest die aktuellen Bodies von der GPU zurück
     fn read_bodies_from_gpu(&self) -> Vec<Body> {
-        let source_buffer = if self.current_buffer_is_a {
-            &self.bodies_buffer_a
-        } else {
-            &self.bodies_buffer_b
-        };
+        let source_buffer = self.get_active_buffer();
 
         let staging_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Staging Buffer"),
@@ -236,6 +232,25 @@ impl GpuSimulator {
 
         bodies
     }
+
+    /// Gibt den aktuellen Buffer zurück (der die neuesten Daten enthält)
+    #[inline]
+    fn get_active_buffer(&self) -> &wgpu::Buffer {
+        if self.current_buffer_is_a {
+            &self.bodies_buffer_a
+        } else {
+            &self.bodies_buffer_b
+        }
+    }
+
+    #[inline]
+    fn get_inactive_buffer(&self) -> &wgpu::Buffer {
+        if self.current_buffer_is_a {
+            &self.bodies_buffer_b
+        } else {
+            &self.bodies_buffer_a
+        }
+    }
 }
 
 // Implementierung des zentralen Simulation Traits
@@ -250,11 +265,8 @@ impl Simulation for GpuSimulator {
         });
 
         for _ in 0..steps {
-            let (input_buffer, output_buffer) = if self.current_buffer_is_a {
-                (&self.bodies_buffer_a, &self.bodies_buffer_b)
-            } else {
-                (&self.bodies_buffer_b, &self.bodies_buffer_a)
-            };
+            let input_buffer = self.get_active_buffer();
+            let output_buffer = self.get_inactive_buffer();
 
             let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("N-Body Bind Group"),
@@ -308,7 +320,11 @@ impl Simulation for GpuSimulator {
         &self.state
     }
 
-    fn state_mut(&mut self) -> &mut SimulationState {
-        &mut self.state
+    fn set_bodies(&mut self, bodies: Vec<Body>) {
+        self.state.set_bodies(bodies.clone());
+
+        let target_buffer = self.get_active_buffer();
+
+        self.queue.write_buffer(target_buffer, 0, bytemuck::cast_slice(&bodies));
     }
 }

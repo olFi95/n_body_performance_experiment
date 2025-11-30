@@ -6,19 +6,18 @@ pub trait Simulation {
 
     fn state(&self) -> &SimulationState;
 
-    fn state_mut(&mut self) -> &mut SimulationState;
-
+    /// Gibt eine Kopie der Bodies zurück
     fn get_bodies(&self) -> Vec<Body> {
         self.state().get_bodies()
     }
 
+    /// Gibt die Simulationsparameter zurück
     fn get_params(&self) -> SimulationParams {
         self.state().get_params()
     }
 
-    fn set_bodies(&mut self, bodies: Vec<Body>) {
-        self.state_mut().set_bodies(bodies);
-    }
+    /// Setzt neue Bodies - garantiert Synchronisation mit GPU-Buffern
+    fn set_bodies(&mut self, bodies: Vec<Body>);
 
     fn len(&self) -> usize {
         self.state().len()
@@ -28,4 +27,3 @@ pub trait Simulation {
         self.state().is_empty()
     }
 }
-

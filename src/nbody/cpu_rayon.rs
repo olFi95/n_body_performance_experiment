@@ -43,7 +43,7 @@ impl Simulation for CpuMultiThreaded {
         &self.state
     }
 
-    fn state_mut(&mut self) -> &mut SimulationState {
-        &mut self.state
+    fn set_bodies(&mut self, bodies: Vec<Body>) {
+        self.state.set_bodies(bodies);
     }
 }
