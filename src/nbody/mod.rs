@@ -1,19 +1,19 @@
 pub mod types;
 pub mod simulator;
 pub mod simulation_state;
-pub mod simulation_trait;  // Zentraler Simulation Trait
+pub mod simulation_trait;  // Central Simulation Trait
 pub mod cpu_single;
 pub mod cpu_rayon;
-pub mod cpu_core;      // Gemeinsame CPU-Funktionen
+pub mod cpu_core;      // Shared CPU functions
 pub mod simd_single;
 pub mod simd_rayon;
-pub mod simd_core;     // Gemeinsame SIMD-Funktionen
+pub mod simd_core;     // Shared SIMD functions
 pub mod gpu;
 
 #[cfg(test)]
 mod tests;
 
-// Re-exports für einfacheren Zugriff
+// Re-exports for easier access
 pub use types::{Body, SimulationParams};
 pub use simulator::{NBodySimulator, utils};
 pub use simulation_state::SimulationState;

@@ -45,7 +45,7 @@ fn benchmark_scaling_comparison(c: &mut Criterion) {
             });
         });
 
-        // GPU Benchmark - Initialisierung außerhalb der Benchmark-Schleife
+        // GPU Benchmark - initialization outside the benchmark loop
         let rt = tokio::runtime::Runtime::new().unwrap();
         let mut gpu_sim = rt.block_on(async {
             GpuSimulator::new(bodies.clone(), params).await

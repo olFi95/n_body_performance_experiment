@@ -3,10 +3,10 @@ mod tests {
     use crate::nbody::*;
     use approx::assert_relative_eq;
 
-    const EPSILON: f32 = 0.01; // Toleranz für Fließkomma-Vergleiche
+    const EPSILON: f32 = 0.01; // Tolerance for floating point comparisons
 
     fn compare_bodies(bodies1: &[Body], bodies2: &[Body], tolerance: f32) {
-        assert_eq!(bodies1.len(), bodies2.len(), "Anzahl der Körper stimmt nicht überein");
+        assert_eq!(bodies1.len(), bodies2.len(), "Number of bodies doesn't match");
 
         for (_, (b1, b2)) in bodies1.iter().zip(bodies2.iter()).enumerate() {
             assert_relative_eq!(b1.position[0], b2.position[0], epsilon = tolerance,
@@ -32,7 +32,7 @@ mod tests {
 
         let result = sim.get_bodies();
 
-        // Prüfe, dass sich die Körper bewegt haben
+        // Check that bodies have moved
         assert_ne!(result[0].position, bodies[0].position);
         assert_ne!(result[1].position, bodies[1].position);
     }
@@ -56,7 +56,7 @@ mod tests {
 
     #[test]
     fn test_cpu_single_vs_simd_single() {
-        // Verwende eine durch 8 teilbare Anzahl für optimale SIMD-Performance
+        // Use a count divisible by 8 for optimal SIMD performance
         let bodies = utils::generate_random_bodies(64, 100.0);
         let params = SimulationParams::default();
 
@@ -120,65 +120,65 @@ mod tests {
         let result1 = sim1.get_bodies();
         let result2 = sim2.get_bodies();
 
-        // GPU kann leicht unterschiedliche Ergebnisse haben aufgrund von Floating-Point-Arithmetik
-        compare_bodies(&result1, &result2, 0.1); // Toleranz für GPU-Floating-Point-Unterschiede
+        // GPU can have slightly different results due to floating-point arithmetic
+        compare_bodies(&result1, &result2, 0.1); // Tolerance for GPU floating-point differences
     }
 
     #[tokio::test]
     async fn test_gpu_basic() {
-        // Einfacher Test mit nur 2 Körpern
+        // Simple test with only 2 bodies
         let bodies = utils::generate_two_body_system();
         let params = SimulationParams::default();
 
         let mut sim = GpuSimulator::new(bodies.clone(), params).await;
 
-        // Ein einzelner Schritt
+        // A single step
         sim.step(1);
         let result = sim.get_bodies();
 
-        // Prüfe, dass sich die Körper bewegt haben
+        // Check that bodies have moved
         assert_ne!(result[0].position, bodies[0].position);
         assert_ne!(result[1].position, bodies[1].position);
 
-        // Vergleiche mit CPU
+        // Compare with CPU
         let mut cpu_sim = CpuSingleThreaded::new(bodies.clone(), params);
         cpu_sim.step(1);
         let cpu_result = cpu_sim.get_bodies();
 
-        // Mit 1 Schritt sollten sie sehr ähnlich sein
+        // With 1 step they should be very similar
         compare_bodies(&cpu_result, &result, 0.01);
     }
 
     #[test]
     fn test_energy_conservation_approximation() {
-        // Test, ob die Gesamtenergie ungefähr erhalten bleibt
-        // Verwende ein stabileres Szenario mit weniger Schritten
+        // Test if total energy is approximately conserved
+        // Use a more stable scenario with fewer steps
         let bodies = utils::generate_two_body_system();
         let params = SimulationParams::default();
 
         let mut sim = CpuSingleThreaded::new(bodies.clone(), params);
 
         let initial_energy = calculate_total_energy(&sim.get_bodies());
-        sim.step(10); // Reduziere die Anzahl der Schritte für bessere Stabilität
+        sim.step(10); // Reduce number of steps for better stability
         let final_energy = calculate_total_energy(&sim.get_bodies());
 
-        // Euler-Integration ist nicht energieerhaltend, aber sollte nicht explodieren
+        // Euler integration doesn't conserve energy, but shouldn't explode
         let energy_diff = (final_energy - initial_energy).abs();
         assert!(energy_diff / initial_energy.abs() < 5.0,
-            "Energie hat sich zu stark geändert: {} -> {}", initial_energy, final_energy);
+            "Energy changed too much: {} -> {}", initial_energy, final_energy);
     }
 
     fn calculate_total_energy(bodies: &[Body]) -> f32 {
         let mut kinetic = 0.0;
         let mut potential = 0.0;
 
-        // Kinetische Energie
+        // Kinetic energy
         for body in bodies {
             let v_squared = body.velocity[0].powi(2) + body.velocity[1].powi(2);
             kinetic += 0.5 * body.mass * v_squared;
         }
 
-        // Potentielle Energie
+        // Potential energy
         for i in 0..bodies.len() {
             for j in (i + 1)..bodies.len() {
                 let dx = bodies[j].position[0] - bodies[i].position[0];
@@ -201,7 +201,7 @@ mod tests {
 
         let result = sim.get_bodies();
 
-        // Alle Körper sollten sich bewegt haben
+        // All bodies should have moved
         for (original, updated) in bodies.iter().zip(result.iter()) {
             assert_ne!(original.position, updated.position);
         }
@@ -209,7 +209,7 @@ mod tests {
 
     #[test]
     fn test_all_implementations_consistency() {
-        // Test mit allen CPU-Implementierungen
+        // Test with all CPU implementations
         let bodies = utils::generate_random_bodies(64, 100.0);
         let params = SimulationParams::default();
 
@@ -228,7 +228,7 @@ mod tests {
         let result_simd_single = sim_simd_single.get_bodies();
         let result_simd_rayon = sim_simd_rayon.get_bodies();
 
-        // Alle sollten identische Ergebnisse haben
+        // All should have identical results
         compare_bodies(&result_cpu_single, &result_cpu_rayon, EPSILON);
         compare_bodies(&result_cpu_single, &result_simd_single, EPSILON);
         compare_bodies(&result_cpu_single, &result_simd_rayon, EPSILON);

@@ -6,17 +6,17 @@ pub trait Simulation {
 
     fn state(&self) -> &SimulationState;
 
-    /// Gibt eine Kopie der Bodies zurück
+    /// Returns a copy of the bodies
     fn get_bodies(&self) -> Vec<Body> {
         self.state().get_bodies()
     }
 
-    /// Gibt die Simulationsparameter zurück
+    /// Returns the simulation parameters
     fn get_params(&self) -> SimulationParams {
         self.state().get_params()
     }
 
-    /// Setzt neue Bodies - garantiert Synchronisation mit GPU-Buffern
+    /// Sets new bodies - guarantees synchronization with GPU buffers
     fn set_bodies(&mut self, bodies: Vec<Body>);
 
     fn len(&self) -> usize {
