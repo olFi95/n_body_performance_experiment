@@ -1,7 +1,5 @@
-/// Gemeinsame Datentypen für alle N-Body Implementierungen
 use bytemuck::{Pod, Zeroable};
 
-/// Repräsentiert einen Körper in der 2D-Simulation
 /// WICHTIG: Layout muss exakt mit WGSL-Shader übereinstimmen
 /// - #[repr(C)]: C-kompatibles Memory-Layout
 /// - #[repr(align(16))]: Alignment an 16-Byte-Grenze
@@ -26,7 +24,6 @@ impl Body {
     }
 }
 
-/// Simulationsparameter
 #[derive(Debug, Clone, Copy, Pod, Zeroable)]
 #[repr(C)]
 pub struct SimulationParams {

@@ -1,4 +1,3 @@
-/// SIMD Single-threaded N-Body Simulation
 use crate::nbody::types::{Body, SimulationParams};
 use crate::nbody::simulation_state::SimulationState;
 use crate::nbody::simulation_trait::Simulation;
@@ -21,7 +20,6 @@ impl SimdSingleThreaded {
         let bodies_ref = self.state.bodies();
         let params = self.state.params;
 
-        // Sequential iteration mit SIMD-Kern
         let new_bodies: Vec<Body> = (0..n)
             .map(|i| {
                 simd_core::compute_body_update(i, bodies_ref, &params)
@@ -32,7 +30,6 @@ impl SimdSingleThreaded {
     }
 }
 
-// Implementierung des zentralen Simulation Traits
 impl Simulation for SimdSingleThreaded {
     fn step(&mut self, steps: usize) {
         for _ in 0..steps {

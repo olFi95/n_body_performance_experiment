@@ -1,8 +1,5 @@
-/// Gemeinsame CPU-Kernfunktionen für Single- und Multi-threaded Implementierungen
 use crate::nbody::types::{Body, SimulationParams};
 
-/// Berechnet ein Update für einen einzelnen Körper
-/// unter Verwendung von allen anderen Körpern
 #[inline]
 pub fn compute_body_update(
     index: usize,

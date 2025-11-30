@@ -1,4 +1,3 @@
-/// Single-threaded CPU N-Body Simulation
 use crate::nbody::types::{Body, SimulationParams};
 use crate::nbody::simulation_state::SimulationState;
 use crate::nbody::simulation_trait::Simulation;
@@ -21,7 +20,6 @@ impl CpuSingleThreaded {
         let bodies_ref = self.state.bodies();
         let params = self.state.params;
 
-        // Sequential iteration mit CPU-Kern
         let new_bodies: Vec<Body> = (0..n)
             .map(|i| {
                 cpu_core::compute_body_update(i, bodies_ref, &params)
@@ -32,7 +30,6 @@ impl CpuSingleThreaded {
     }
 }
 
-// Implementierung des zentralen Simulation Traits
 impl Simulation for CpuSingleThreaded {
     fn step(&mut self, steps: usize) {
         for _ in 0..steps {

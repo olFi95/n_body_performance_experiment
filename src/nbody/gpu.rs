@@ -245,15 +245,17 @@ impl Simulation for GpuSimulator {
         let workgroup_size = 256;
         let num_workgroups = (n + workgroup_size - 1) / workgroup_size;
 
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("N-Body Compute Encoder"),
+        });
+
         for _ in 0..steps {
-            // Double-Buffering: Lese aus dem Buffer mit aktuellen Daten, schreibe in den anderen
             let (input_buffer, output_buffer) = if self.current_buffer_is_a {
                 (&self.bodies_buffer_a, &self.bodies_buffer_b)
             } else {
                 (&self.bodies_buffer_b, &self.bodies_buffer_a)
             };
 
-            // Erstelle Bind Group für diesen Schritt
             let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("N-Body Bind Group"),
                 layout: &self.bind_group_layout,
@@ -277,12 +279,6 @@ impl Simulation for GpuSimulator {
                 ],
             });
 
-            let mut encoder = self
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("N-Body Compute Encoder"),
-                });
-
             {
                 let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                     label: Some("N-Body Compute Pass"),
@@ -294,20 +290,17 @@ impl Simulation for GpuSimulator {
                 compute_pass.dispatch_workgroups(num_workgroups, 1, 1);
             }
 
-            let command_buffer = encoder.finish();
-            let submission_index = self.queue.submit(Some(command_buffer));
-
-            // Warte auf GPU-Fertigstellung
-            self.device.poll(PollType::Wait {
-                submission_index: Some(submission_index),
-                timeout: None,
-            }).expect("Failed to poll device");
-
-            // Swap: Nach dem Compute-Pass liegen die neuen Daten im Output-Buffer
             self.current_buffer_is_a = !self.current_buffer_is_a;
         }
 
-        // Synchronisiere den state mit den GPU-Daten
+        let command_buffer = encoder.finish();
+        let submission_index = self.queue.submit(Some(command_buffer));
+
+        self.device.poll(PollType::Wait {
+            submission_index: Some(submission_index),
+            timeout: None,
+        }).expect("Failed to poll device");
+
         self.state.update_bodies(self.read_bodies_from_gpu());
     }
 

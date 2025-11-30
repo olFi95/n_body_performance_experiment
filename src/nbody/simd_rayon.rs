@@ -1,4 +1,3 @@
-/// SIMD Multi-threaded N-Body Simulation mit Rayon
 use crate::nbody::types::{Body, SimulationParams};
 use crate::nbody::simulation_state::SimulationState;
 use crate::nbody::simulation_trait::Simulation;
@@ -22,7 +21,6 @@ impl SimdMultiThreaded {
         let bodies_ref = self.state.bodies();
         let params = self.state.params;
 
-        // Parallele Iteration mit SIMD-Kern
         let new_bodies: Vec<Body> = (0..n)
             .into_par_iter()
             .map(|i| {
@@ -34,7 +32,6 @@ impl SimdMultiThreaded {
     }
 }
 
-// Implementierung des zentralen Simulation Traits
 impl Simulation for SimdMultiThreaded {
     fn step(&mut self, steps: usize) {
         for _ in 0..steps {

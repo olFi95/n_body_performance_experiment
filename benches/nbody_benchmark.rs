@@ -1,9 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, PlotConfiguration, AxisScale};
-use criterion::async_executor::FuturesExecutor;
 use monte_carlo_root::nbody::*;
 use std::time::Duration;
 
-// Konfiguration für bessere Plots
 fn configure_criterion() -> Criterion {
     Criterion::default()
         .sample_size(20)
@@ -15,8 +13,7 @@ fn benchmark_scaling_comparison(c: &mut Criterion) {
     let mut group = c.benchmark_group("Scaling: All Implementations");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
-    // Deutlich größere Körperanzahlen für realistische Benchmarks
-    for n in [1000, 2500, 5000, 10000, 25000, 50000].iter() {
+    for n in [1000, 2500, 5_000, 10_000, 25000, 50_000, 100_000].iter() {
         let bodies = utils::generate_random_bodies(*n, 100.0);
         let params = SimulationParams::default();
 

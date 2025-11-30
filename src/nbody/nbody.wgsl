@@ -1,12 +1,12 @@
 // N-Body Simulation GPU Shader - Korrekt aligned für WGSL Storage Buffer
 
 struct Body {
-    position: vec2<f32>,      // Offset 0, align 8
-    velocity: vec2<f32>,      // Offset 8, align 8
-    mass: f32,                // Offset 16, align 4
-    padding0: f32,            // Offset 20
-    padding1: f32,            // Offset 24
-    padding2: f32,            // Offset 28
+    position: vec2<f32>,
+    velocity: vec2<f32>,
+    mass: f32,
+    padding0: f32,
+    padding1: f32,
+    padding2: f32,
 }
 
 struct SimulationParams {
@@ -38,7 +38,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let current = bodies_in[i];
     var force = vec2<f32>(0.0, 0.0);
 
-    // Berechne Gravitationskraft von allen anderen Körpern
     for (var j = 0u; j < n_bodies; j = j + 1u) {
         if (i == j) {
             continue;
@@ -52,16 +51,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         force = force + force_magnitude * (r_vec / r_distance);
     }
 
-    // Berechne Beschleunigung: a = F / m
     let acceleration = force / current.mass;
 
-    // Update Geschwindigkeit: v_new = v + a * dt
     let new_velocity = current.velocity + acceleration * params.dt;
 
-    // Update Position: p_new = p + v_new * dt
     let new_position = current.position + new_velocity * params.dt;
 
-    // Schreibe Ergebnis
     bodies_out[i].position = new_position;
     bodies_out[i].velocity = new_velocity;
     bodies_out[i].mass = current.mass;
