@@ -1,4 +1,4 @@
-// N-Body Simulation GPU Shader - Korrekt aligned für WGSL Storage Buffer
+// N-Body Simulation GPU Shader - Correctly aligned for WGSL Storage Buffer
 
 struct Body {
     position: vec2<f32>,

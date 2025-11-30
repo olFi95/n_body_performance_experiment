@@ -64,11 +64,11 @@ impl GpuSimulator {
         let n_bodies_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("N Bodies Buffer"),
             contents: bytemuck::bytes_of(&n_bodies),
-            usage: wgpu::BufferUsages::UNIFORM,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
         println!("GPU Setup: {} bodies, buffer size A: {} bytes, buffer size B: {} bytes",
-                 n_bodies,
+                 bodies.len(),
                  bodies.len() * std::mem::size_of::<Body>(),
                  bodies.len() * std::mem::size_of::<Body>());
 
@@ -137,7 +137,7 @@ impl GpuSimulator {
                     },
                     count: None,
                 },
-                // N Bodies
+                // Anzahl der Bodies
                 wgpu::BindGroupLayoutEntry {
                     binding: 3,
                     visibility: wgpu::ShaderStages::COMPUTE,
@@ -311,8 +311,11 @@ impl Simulation for GpuSimulator {
         self.state.set_bodies(bodies.clone());
 
         let target_buffer = self.get_active_buffer();
-
         self.queue.write_buffer(target_buffer, 0, bytemuck::cast_slice(&bodies));
+
+        // WICHTIG: Auch n_bodies_buffer aktualisieren!
+        let n_bodies = bodies.len() as u32;
+        self.queue.write_buffer(&self.n_bodies_buffer, 0, bytemuck::bytes_of(&n_bodies));
     }
 
     fn get_params(&self) -> &SimulationParams {

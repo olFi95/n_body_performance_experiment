@@ -10,7 +10,7 @@ pub fn compute_body_update(
     let current = &all_bodies[index];
     let mut force = [0.0f32; 2];
 
-    // Berechne Kraft von allen anderen Körpern
+    // Calculate force from all other bodies
     for j in 0..n {
         if index == j {
             continue;
@@ -50,4 +50,3 @@ pub fn compute_body_update(
 
     Body::new(new_position, new_velocity, current.mass)
 }
-

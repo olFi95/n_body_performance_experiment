@@ -1,9 +1,9 @@
 use bytemuck::{Pod, Zeroable};
 
-/// WICHTIG: Layout muss exakt mit WGSL-Shader übereinstimmen
-/// - #[repr(C)]: C-kompatibles Memory-Layout
-/// - #[repr(align(16))]: Alignment an 16-Byte-Grenze
-/// - Explizites Padding erforderlich für Pod-Trait
+/// IMPORTANT: Layout must match exactly with WGSL shader
+/// - #[repr(C)]: C-compatible memory layout
+/// - #[repr(align(16))]: Alignment at 16-byte boundary
+/// - Explicit padding required for Pod trait
 #[derive(Debug, Clone, Copy, Pod, Zeroable)]
 #[repr(C, align(16))]
 pub struct Body {
@@ -27,9 +27,9 @@ impl Body {
 #[derive(Debug, Clone, Copy, Pod, Zeroable)]
 #[repr(C)]
 pub struct SimulationParams {
-    pub dt: f32,           // Zeitschritt
-    pub epsilon: f32,      // Softening parameter zur Vermeidung von Singularitäten
-    pub g_constant: f32,   // Gravitationskonstante
+    pub dt: f32,           // Time step
+    pub epsilon: f32,      // Softening parameter to avoid singularities
+    pub g_constant: f32,   // Gravitational constant
 }
 
 impl Default for SimulationParams {
