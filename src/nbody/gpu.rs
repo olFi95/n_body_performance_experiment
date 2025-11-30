@@ -35,7 +35,6 @@ impl GpuSimulator {
             .await
             .expect("Failed to create device");
 
-        // Erstelle Buffer A (initial mit Daten)
         let bodies_buffer_a = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Bodies Buffer A"),
             contents: bytemuck::cast_slice(&bodies),
@@ -44,14 +43,13 @@ impl GpuSimulator {
                 | wgpu::BufferUsages::COPY_SRC,
         });
 
-        // Erstelle Buffer B (initial mit den gleichen Daten initialisiert)
-        // WICHTIG: Beide Buffer müssen initialisiert sein für Double-Buffering
-        let bodies_buffer_b = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let bodies_buffer_b = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Bodies Buffer B"),
-            contents: bytemuck::cast_slice(&bodies),
+            size: (bodies.len() * std::mem::size_of::<Body>()) as u64,
             usage: wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST
                 | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false
         });
 
         let params_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -72,7 +70,6 @@ impl GpuSimulator {
                  bodies.len() * std::mem::size_of::<Body>(),
                  bodies.len() * std::mem::size_of::<Body>());
 
-        // DEBUG: Lese Buffer B direkt nach Initialisierung aus
         {
             let staging = device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Debug Staging"),
@@ -94,17 +91,14 @@ impl GpuSimulator {
             staging.unmap();
         }
 
-        // Shader Module
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("N-Body Compute Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("nbody.wgsl").into()),
         });
 
-        // Bind Group Layout
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("N-Body Bind Group Layout"),
             entries: &[
-                // Input Buffer (read-only)
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::COMPUTE,
@@ -115,7 +109,6 @@ impl GpuSimulator {
                     },
                     count: None,
                 },
-                // Output Buffer (read-write)
                 wgpu::BindGroupLayoutEntry {
                     binding: 1,
                     visibility: wgpu::ShaderStages::COMPUTE,
@@ -126,7 +119,6 @@ impl GpuSimulator {
                     },
                     count: None,
                 },
-                // Params
                 wgpu::BindGroupLayoutEntry {
                     binding: 2,
                     visibility: wgpu::ShaderStages::COMPUTE,
@@ -137,7 +129,6 @@ impl GpuSimulator {
                     },
                     count: None,
                 },
-                // Anzahl der Bodies
                 wgpu::BindGroupLayoutEntry {
                     binding: 3,
                     visibility: wgpu::ShaderStages::COMPUTE,
@@ -151,14 +142,12 @@ impl GpuSimulator {
             ],
         });
 
-        // Pipeline Layout
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("N-Body Pipeline Layout"),
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
 
-        // Compute Pipeline
         let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("N-Body Compute Pipeline"),
             layout: Some(&pipeline_layout),
@@ -201,7 +190,6 @@ impl GpuSimulator {
     }
 }
 
-// Implementierung des zentralen Simulation Traits
 impl Simulation for GpuSimulator {
     fn step(&mut self, steps: usize) {
         let n = self.state.len() as u32;
@@ -313,7 +301,6 @@ impl Simulation for GpuSimulator {
         let target_buffer = self.get_active_buffer();
         self.queue.write_buffer(target_buffer, 0, bytemuck::cast_slice(&bodies));
 
-        // WICHTIG: Auch n_bodies_buffer aktualisieren!
         let n_bodies = bodies.len() as u32;
         self.queue.write_buffer(&self.n_bodies_buffer, 0, bytemuck::bytes_of(&n_bodies));
     }
@@ -325,7 +312,6 @@ impl Simulation for GpuSimulator {
     fn set_params(&mut self, simulation_params: SimulationParams) {
         self.state.params = simulation_params;
 
-        // Aktualisiere den GPU-Buffer mit den neuen Parametern
         self.queue.write_buffer(
             &self.params_buffer,
             0,
