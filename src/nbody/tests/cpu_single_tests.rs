@@ -2,8 +2,6 @@
 use crate::nbody::*;
 use approx::assert_relative_eq;
 
-const EPSILON: f32 = 1e-6;
-
 fn calculate_total_energy(bodies: &[Body]) -> f32 {
     let mut kinetic = 0.0;
     let mut potential = 0.0;

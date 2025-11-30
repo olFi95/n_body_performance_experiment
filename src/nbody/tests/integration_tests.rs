@@ -2,7 +2,7 @@
 use crate::nbody::*;
 use approx::assert_relative_eq;
 
-fn compare_bodies(bodies1: &[Body], bodies2: &[Body], tolerance: f32) {
+pub fn compare_bodies(bodies1: &[Body], bodies2: &[Body], tolerance: f32) {
     assert_eq!(bodies1.len(), bodies2.len(), "Number of bodies doesn't match");
 
     for (_, (b1, b2)) in bodies1.iter().zip(bodies2.iter()).enumerate() {

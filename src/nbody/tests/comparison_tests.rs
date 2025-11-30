@@ -1,25 +1,9 @@
 // Comparison tests - all implementations against CPU Single as reference
 use crate::nbody::*;
 use approx::assert_relative_eq;
+use crate::nbody::tests::integration_tests::compare_bodies;
 
 const EPSILON: f32 = 0.01; // Tolerance for floating point comparisons
-
-fn compare_bodies(bodies1: &[Body], bodies2: &[Body], tolerance: f32) {
-    assert_eq!(bodies1.len(), bodies2.len(), "Number of bodies doesn't match");
-
-    for (_, (b1, b2)) in bodies1.iter().zip(bodies2.iter()).enumerate() {
-        assert_relative_eq!(b1.position[0], b2.position[0], epsilon = tolerance,
-            max_relative = tolerance);
-        assert_relative_eq!(b1.position[1], b2.position[1], epsilon = tolerance,
-            max_relative = tolerance);
-        assert_relative_eq!(b1.velocity[0], b2.velocity[0], epsilon = tolerance,
-            max_relative = tolerance);
-        assert_relative_eq!(b1.velocity[1], b2.velocity[1], epsilon = tolerance,
-            max_relative = tolerance);
-        assert_relative_eq!(b1.mass, b2.mass, epsilon = tolerance,
-            max_relative = tolerance);
-    }
-}
 
 #[test]
 fn test_cpu_single_vs_cpu_rayon() {
