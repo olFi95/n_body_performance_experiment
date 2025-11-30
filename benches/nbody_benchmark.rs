@@ -11,7 +11,7 @@ fn configure_criterion() -> Criterion {
 }
 
 fn benchmark_scaling_comparison(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Scaling: All Implementations");
+    let mut group = c.benchmark_group("#Bodies Scaling: All Implementations");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     for n in [1000, 2500, 5_000, 10_000, 25000, 50_000, 100_000].iter() {
@@ -63,7 +63,7 @@ fn benchmark_scaling_comparison(c: &mut Criterion) {
 }
 
 fn benchmark_step_scaling(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Step Scaling: All Implementations");
+    let mut group = c.benchmark_group("#Steps Scaling: All Implementations");
     group.plot_config(PlotConfiguration::default().summary_scale(AxisScale::Logarithmic));
 
     const NUM_BODIES: usize = 10_000;
