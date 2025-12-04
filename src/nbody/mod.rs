@@ -12,14 +12,15 @@ pub mod gpu;
 
 #[cfg(test)]
 mod tests;
+pub mod simd_alligned_core;
 
-// Re-exports for easier access
-pub use types::{Body, SimulationParams};
-pub use simulator::{NBodySimulator, utils};
+pub use cpu_rayon::CpuMultiThreaded;
+pub use cpu_single::CpuSingleThreaded;
+pub use gpu::GpuSimulator;
+pub use simd_rayon::SimdMultiThreaded;
+pub use simd_single::SimdSingleThreaded;
 pub use simulation_state::SimulationState;
 pub use simulation_trait::Simulation;
-pub use cpu_single::CpuSingleThreaded;
-pub use cpu_rayon::CpuMultiThreaded;
-pub use simd_single::SimdSingleThreaded;
-pub use simd_rayon::SimdMultiThreaded;
-pub use gpu::GpuSimulator;
+pub use simulator::{utils, NBodySimulator};
+// Re-exports for easier access
+pub use types::{Body, SimulationParams};

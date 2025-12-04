@@ -1,4 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, PlotConfiguration, AxisScale};
+use std::hint::black_box;
+use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration};
+use nbody_sim::nbody::simd_alligned_core::SimdAlignedNBodyCore;
 use nbody_sim::nbody::*;
 use std::time::Duration;
 
@@ -56,6 +58,14 @@ fn benchmark_scaling_comparison(c: &mut Criterion) {
                 gpu_sim.step(black_box(1));
             });
         });
+
+        let mut simd_aligned_bodies = SimdAlignedNBodyCore::new(bodies.clone());
+        group.bench_with_input(BenchmarkId::new("SIMD Alligned", n), n, |b, &s| {
+            b.iter(|| {
+                simd_aligned_bodies.step(black_box(1));
+            });
+        });
+
     }
 
     group.finish();
@@ -106,6 +116,13 @@ fn benchmark_step_scaling(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("GPU WGPU", steps), steps, |b, &s| {
             b.iter(|| {
                 gpu_sim.step(black_box(s));
+            });
+        });
+
+        let mut simd_aligned_bodies = SimdAlignedNBodyCore::new(bodies.clone());
+        group.bench_with_input(BenchmarkId::new("SIMD Alligned", steps), steps, |b, &s| {
+            b.iter(|| {
+                simd_aligned_bodies.step(black_box(s));
             });
         });
     }
