@@ -1,6 +1,7 @@
 // Integration tests - set_params and set_bodies for all implementations
 use crate::nbody::*;
 use approx::assert_relative_eq;
+use crate::nbody::shader_types::nbody::{Body, SimulationParams};
 
 pub fn compare_bodies(bodies1: &[Body], bodies2: &[Body], tolerance: f32) {
     assert_eq!(bodies1.len(), bodies2.len(), "Number of bodies doesn't match");

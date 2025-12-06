@@ -1,6 +1,7 @@
 // Reference implementation tests - cpu_single is the reference for correct calculations
 use crate::nbody::*;
 use approx::assert_relative_eq;
+use crate::nbody::shader_types::nbody::{Body, SimulationParams};
 
 fn calculate_total_energy(bodies: &[Body]) -> f32 {
     let mut kinetic = 0.0;

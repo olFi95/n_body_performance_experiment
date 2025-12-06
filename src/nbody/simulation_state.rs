@@ -1,4 +1,4 @@
-use crate::nbody::types::{Body, SimulationParams};
+use crate::nbody::shader_types::nbody::{Body, SimulationParams};
 
 pub struct SimulationState {
     bodies: Vec<Body>,

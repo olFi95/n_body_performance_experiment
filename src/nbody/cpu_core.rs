@@ -1,4 +1,4 @@
-use crate::nbody::types::{Body, SimulationParams};
+use crate::nbody::shader_types::nbody::{Body, SimulationParams};
 
 #[inline]
 pub fn compute_body_update(

@@ -1,4 +1,4 @@
-use crate::nbody::types::{Body, SimulationParams};
+use crate::nbody::shader_types::nbody::{Body, SimulationParams};
 use std::simd::{f32x8, num::SimdFloat, StdFloat};
 
 #[inline]

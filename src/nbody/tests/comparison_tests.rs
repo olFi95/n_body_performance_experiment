@@ -2,6 +2,7 @@
 use crate::nbody::*;
 use approx::assert_relative_eq;
 use crate::nbody::tests::integration_tests::compare_bodies;
+use crate::nbody::shader_types::nbody::{Body, SimulationParams};
 
 const EPSILON: f32 = 0.01; // Tolerance for floating point comparisons
 

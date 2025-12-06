@@ -1,4 +1,4 @@
-use crate::nbody::types::{Body, SimulationParams};
+use crate::nbody::shader_types::nbody::{Body, SimulationParams};
 
 pub trait NBodySimulator: Send {
     fn step(&mut self, steps: usize);
@@ -11,8 +11,8 @@ pub trait NBodySimulator: Send {
 }
 
 pub mod utils {
-    use crate::nbody::types::Body;
     use rand::Rng;
+    use crate::nbody::shader_types::nbody::Body;
 
     pub fn generate_random_bodies(n: usize, mass: f32) -> Vec<Body> {
         let mut rng = rand::rng();

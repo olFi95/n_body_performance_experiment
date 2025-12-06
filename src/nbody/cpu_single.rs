@@ -1,7 +1,7 @@
-use crate::nbody::types::{Body, SimulationParams};
 use crate::nbody::simulation_state::SimulationState;
 use crate::nbody::simulation_trait::Simulation;
 use crate::nbody::cpu_core;
+use crate::nbody::shader_types::nbody::{Body, SimulationParams};
 
 pub struct CpuSingleThreaded {
     state: SimulationState,

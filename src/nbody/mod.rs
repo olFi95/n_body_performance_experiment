@@ -1,4 +1,3 @@
-pub mod types;
 pub mod simulator;
 pub mod simulation_state;
 pub mod simulation_trait;  // Central Simulation Trait
@@ -13,6 +12,7 @@ pub mod gpu;
 #[cfg(test)]
 mod tests;
 pub mod simd_alligned_core;
+pub mod shader_types;
 
 pub use cpu_rayon::CpuMultiThreaded;
 pub use cpu_single::CpuSingleThreaded;
@@ -22,5 +22,3 @@ pub use simd_single::SimdSingleThreaded;
 pub use simulation_state::SimulationState;
 pub use simulation_trait::Simulation;
 pub use simulator::{utils, NBodySimulator};
-// Re-exports for easier access
-pub use types::{Body, SimulationParams};

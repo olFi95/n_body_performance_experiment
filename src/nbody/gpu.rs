@@ -1,5 +1,5 @@
 /// GPU N-Body Simulation mit WGPU - Double-Buffering wie CPU-Version
-use crate::nbody::types::{Body, SimulationParams};
+use crate::nbody::shader_types::nbody::{Body, SimulationParams};
 use crate::nbody::simulation_state::SimulationState;
 use crate::nbody::simulation_trait::Simulation;
 use wgpu::util::DeviceExt;
@@ -93,7 +93,7 @@ impl GpuSimulator {
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("N-Body Compute Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("nbody.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shaders/nbody.wgsl").into()),
         });
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

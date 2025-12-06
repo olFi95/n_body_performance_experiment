@@ -1,6 +1,6 @@
 use std::simd::{f32x8, StdFloat};
 use std::simd::prelude::SimdFloat;
-use crate::nbody::types::{Body, SimulationParams};
+use crate::nbody::shader_types::nbody::{Body, SimulationParams};
 use crate::nbody::Simulation;
 
 #[derive(Default)]

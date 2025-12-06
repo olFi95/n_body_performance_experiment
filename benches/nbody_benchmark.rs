@@ -3,6 +3,7 @@ use criterion::{criterion_group, criterion_main, AxisScale, BenchmarkId, Criteri
 use nbody_sim::nbody::simd_alligned_core::SimdAlignedNBodyCore;
 use nbody_sim::nbody::*;
 use std::time::Duration;
+use nbody_sim::nbody::shader_types::nbody::SimulationParams;
 
 fn configure_criterion() -> Criterion {
     Criterion::default()
